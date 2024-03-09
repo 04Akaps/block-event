@@ -10,23 +10,23 @@ import (
 type Node struct {
 	config *config.Node
 
-	client  *ethclient.Client
-	chain   string
-	chainID *big.Int
+	Client  *ethclient.Client
+	Chain   string
+	ChainID *big.Int
 }
 
 func NewNode(config *config.Node) (*Node, error) {
 	n := &Node{
 		config: config,
-		chain:  config.ChainName,
+		Chain:  config.ChainName,
 	}
 
 	var err error
 	ctx := context.Background()
 
-	if n.client, err = ethclient.DialContext(ctx, config.Dial); err != nil {
+	if n.Client, err = ethclient.DialContext(ctx, config.Dial); err != nil {
 		return nil, err
-	} else if n.chainID, err = n.client.ChainID(ctx); err != nil {
+	} else if n.ChainID, err = n.Client.ChainID(ctx); err != nil {
 		return nil, err
 	} else {
 		return n, nil

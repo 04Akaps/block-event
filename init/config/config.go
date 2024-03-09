@@ -1,14 +1,16 @@
 package config
 
 import (
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/naoina/toml"
 	"os"
 )
 
 type Node struct {
-	Dial       string
-	StartBlock uint64
-	ChainName  string
+	Dial         string
+	StartBlock   int64
+	ChainName    string
+	TokenAddress []common.Address
 }
 
 type Config struct {
