@@ -4,6 +4,7 @@ import (
 	"github.com/04Akaps/block-event/event/module"
 	"github.com/04Akaps/block-event/init/config"
 	"github.com/04Akaps/block-event/repository"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/log"
 	"math/big"
 	"time"
@@ -14,6 +15,7 @@ type TokenTransferEvent struct {
 
 	chainInfos []*module.ChainInfo
 	scanner    []*module.Scanner
+	writer     *module.Writer
 
 	repository *repository.Repository
 }
@@ -24,13 +26,22 @@ func NewTokenTransferScanner(
 ) *TokenTransferEvent {
 	t := &TokenTransferEvent{cfg: cfg, repository: repository}
 
+	var writerLog chan *module.WriterChan
+
+	t.writer = module.NewWriter(repository, writerLog)
+
 	for name, node := range cfg.Nodes {
 		r := repository.NodeMap[name]
 
 		chainInfo := module.NewChainInfo(r.Client, r.Chain, r.ChainID, node.TokenAddress)
 		t.chainInfos = append(t.chainInfos, chainInfo)
 
-		scannerLog, scanner := module.NewScanner(cfg, chainInfo, node.StartBlock)
+		var scannerLog chan []types.Log
+		var scanner *module.Scanner
+
+		scannerLog, scanner = module.NewScanner(cfg, chainInfo, node.StartBlock)
+
+		scanner.StartCatchEvent(scannerLog, writerLog)
 
 		go func() {
 			ticker := time.NewTicker(5e9)

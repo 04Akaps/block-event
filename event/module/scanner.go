@@ -35,18 +35,18 @@ func NewScanner(
 
 	logs := make(chan []types.Log, 100)
 
-	go s.Scan(startBlock, logs)
+	go s.scan(startBlock, logs)
 
 	return logs, s
 }
 
-func (s *Scanner) Scan(
+func (s *Scanner) scan(
 	startBlock int64,
 	eventLog chan<- []types.Log,
 ) {
 	s.FilterQuery = ethereum.FilterQuery{
 		Addresses: s.chainInfo.scanList,
-		Topics:    [][]common.Hash{s.chainInfo.Topics},
+		Topics:    [][]common.Hash{s.chainInfo.GetEventsToCatch()},
 	}
 
 	start, end := startBlock, int64(0)
@@ -108,4 +108,44 @@ func (s *Scanner) Scan(
 			}
 		}
 	}()
+}
+
+func (s *Scanner) StartCatchEvent(eventChan <-chan []types.Log, writerChan chan<- *WriterChan) {
+	for events := range eventChan {
+
+		ctx := context.Background()
+
+		blocks := make(map[uint64]*types.Header)
+		txs := make(map[common.Hash]*types.Transaction)
+
+		for _, event := range events {
+			if _, ok := blocks[event.BlockNumber]; !ok {
+				// 읽지 않았다면,
+				if header, err := s.chainInfo.Client.HeaderByNumber(ctx, new(big.Int).SetInt64(int64(event.BlockNumber))); err != nil {
+					blocks[event.BlockNumber] = header
+				}
+			}
+
+			if _, ok := txs[event.TxHash]; !ok {
+				if tx, pending, err := s.chainInfo.Client.TransactionByHash(ctx, event.TxHash); err == nil {
+					if !pending {
+						txs[event.TxHash] = tx
+					}
+				}
+			}
+
+			topic := event.Topics[0]
+
+			if eventName, exist := s.chainInfo.CheckEventToCatch(topic); !exist {
+				log.Info("Failed To Find Event To Catch")
+			} else {
+				writerChan <- &WriterChan{
+					EventName: eventName,
+					Block:     blocks[event.BlockNumber],
+					Txs:       txs[event.TxHash],
+				}
+			}
+
+		}
+	}
 }

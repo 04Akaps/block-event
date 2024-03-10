@@ -12,7 +12,7 @@ type ChainInfo struct {
 	ChainName string
 	ChainID   *big.Int
 
-	Topics   []common.Hash
+	Topics   map[string]common.Hash
 	scanList []common.Address
 }
 
@@ -27,11 +27,31 @@ func NewChainInfo(
 		ChainName: chainName,
 		ChainID:   chainID,
 		scanList:  scanList,
+		Topics:    make(map[string]common.Hash),
 	}
 
-	c.Topics = []common.Hash{
-		common.BytesToHash(crypto.Keccak256Hash([]byte("Transfer(address,address,uint256)")).Bytes()),
-	}
+	c.Topics["Transfer"] = common.BytesToHash(crypto.Keccak256Hash([]byte("Transfer(address,address,uint256)")).Bytes())
 
 	return c
+}
+
+func (c *ChainInfo) GetEventsToCatch() []common.Hash {
+	return func() []common.Hash {
+		eventToCatchList := make([]common.Hash, 0)
+		for _, event := range c.Topics {
+			eventToCatchList = append(eventToCatchList, event)
+		}
+		return eventToCatchList
+	}()
+}
+
+func (c *ChainInfo) CheckEventToCatch(hash common.Hash) (string, bool) {
+	return func() (string, bool) {
+		for topic, h := range c.Topics {
+			if h == hash {
+				return topic, true
+			}
+		}
+		return "", false
+	}()
 }
