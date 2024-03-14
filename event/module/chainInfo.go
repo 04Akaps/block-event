@@ -30,7 +30,7 @@ func NewChainInfo(
 		Topics:    make(map[string]common.Hash),
 	}
 
-	c.Topics["Transfer"] = common.BytesToHash(crypto.Keccak256Hash([]byte("Transfer(address,address,uint256)")).Bytes())
+	c.Topics[Transfer] = common.BytesToHash(crypto.Keccak256Hash([]byte("Transfer(address,address,uint256)")).Bytes())
 
 	return c
 }

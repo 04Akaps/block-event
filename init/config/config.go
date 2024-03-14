@@ -14,7 +14,7 @@ type Node struct {
 }
 
 type Config struct {
-	DB struct {
+	Mongo struct {
 		Uri string
 		DB  string
 	}

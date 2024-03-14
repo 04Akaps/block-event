@@ -118,7 +118,7 @@ func (s *Scanner) StartCatchEvent(eventChan <-chan []types.Log, writerChan chan<
 		blocks := make(map[uint64]*types.Header)
 		txs := make(map[common.Hash]*types.Transaction)
 
-		for _, event := range events {
+		for i, event := range events {
 			if _, ok := blocks[event.BlockNumber]; !ok {
 				// 읽지 않았다면,
 				if header, err := s.chainInfo.Client.HeaderByNumber(ctx, new(big.Int).SetInt64(int64(event.BlockNumber))); err != nil {
@@ -141,6 +141,10 @@ func (s *Scanner) StartCatchEvent(eventChan <-chan []types.Log, writerChan chan<
 			} else {
 				writerChan <- &WriterChan{
 					EventName: eventName,
+					Index:     int64(i),
+					ChainName: s.chainInfo.ChainName,
+					ChainID:   s.chainInfo.ChainID.Int64(),
+					Event:     &event,
 					Block:     blocks[event.BlockNumber],
 					Txs:       txs[event.TxHash],
 				}
